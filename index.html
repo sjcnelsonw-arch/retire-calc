@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="退休試算">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>退休投資評估表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: 左欄依「收入 → 支出 → 資產 → 準備金假設」填寫；右欄固定顯示結果，手機改為上下堆疊 */
+:root{
+  --bg:#f3f6f5;
+  --paper:#ffffff;
+  --ink:#1c2a2e;
+  --muted:#5d6e70;
+  --line:#d6e0de;
+  --accent:#1f6f62;
+  --accent-soft:#e2efec;
+  --ok:#2e7d4f; --ok-soft:#e3f2e8;
+  --warn:#9a6a00; --warn-soft:#fbf1d9;
+  --bad:#b23a2a; --bad-soft:#f8e3df;
+  --seg-emerg:#7c95a8;
+  --seg-care:#c08a3e;
+  --seg-free:#2e7d4f;
+  --f-display:"Noto Serif TC","Songti TC",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121a1c; --paper:#1a2427; --ink:#e4ecea; --muted:#9aaeb0; --line:#2c3a3d;
+    --accent:#5fbfa9; --accent-soft:#1f3632;
+    --ok:#6fcf8f; --ok-soft:#1d3426; --warn:#e6b84f; --warn-soft:#382e15; --bad:#f08a78; --bad-soft:#3d221d;
+    --seg-emerg:#8aa4b8; --seg-care:#d9a356; --seg-free:#55b57a;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121a1c; --paper:#1a2427; --ink:#e4ecea; --muted:#9aaeb0; --line:#2c3a3d;
+  --accent:#5fbfa9; --accent-soft:#1f3632;
+  --ok:#6fcf8f; --ok-soft:#1d3426; --warn:#e6b84f; --warn-soft:#382e15; --bad:#f08a78; --bad-soft:#3d221d;
+  --seg-emerg:#8aa4b8; --seg-care:#d9a356; --seg-free:#55b57a;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:28px 48px}
+header{display:grid;gap:6px;margin-bottom:22px}
+h1{font-family:var(--f-display);font-size:1.75rem;line-height:1.25;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:0;max-width:62ch}
+.steps{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.steps span{font-size:.82rem;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.steps span.dim{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.notice{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--warn-soft);color:var(--ink);border-radius:8px;padding:10px 14px;font-size:.9rem;margin-bottom:18px}
+.notice b{color:var(--warn)}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:5px 12px;font-size:.85rem}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:22px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+.inputs{display:grid;gap:16px;min-width:0}
+fieldset{border:1px solid var(--line);background:var(--paper);border-radius:10px;margin:0;padding:16px 18px 18px;display:grid;gap:12px;min-width:0}
+legend{font-family:var(--f-display);font-weight:700;font-size:1.05rem;padding:0 6px;margin-left:-6px}
+.hint{color:var(--muted);font-size:.84rem;margin:-4px 0 2px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:12px;align-items:center}
+@media (max-width:440px){.row{grid-template-columns:minmax(0,1fr)} }
+.row label{font-weight:500}
+.row small{display:block;color:var(--muted);font-weight:400;font-size:.8rem;line-height:1.45}
+.field{display:flex;align-items:center;border:1px solid var(--line);border-radius:6px;background:var(--bg);overflow:hidden}
+.field:focus-within{border-color:var(--accent)}
+.field i{font-style:normal;color:var(--muted);font-size:.8rem;padding:0 8px;white-space:nowrap}
+.field input{border:0;background:transparent;color:var(--ink);font-family:var(--f-num);font-size:16px;padding:7px 8px;width:100%;min-width:0;text-align:right;font-variant-numeric:tabular-nums}
+.field input:focus{outline:none}
+.sub{display:flex;justify-content:space-between;border-top:1px dashed var(--line);padding-top:10px;font-size:.9rem;color:var(--muted)}
+.sub b{font-family:var(--f-num);color:var(--ink);font-variant-numeric:tabular-nums}
+
+.result{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:grid;gap:14px;min-width:0}
+@media (max-width:860px){.result{position:static}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:12px}
+.card h2{font-family:var(--f-display);font-size:1.05rem;margin:0}
+.verdict{border-radius:10px;padding:16px 18px;display:grid;gap:6px}
+.verdict .tag{font-size:.78rem;letter-spacing:.06em;font-weight:700}
+.verdict .big{font-family:var(--f-num);font-size:1.9rem;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}
+.verdict .wan{font-size:.9rem;color:var(--muted)}
+.verdict p{margin:0;font-size:.92rem}
+.v-ok{background:var(--ok-soft)} .v-ok .tag,.v-ok .big{color:var(--ok)}
+.v-warn{background:var(--warn-soft)} .v-warn .tag,.v-warn .big{color:var(--warn)}
+.v-bad{background:var(--bad-soft)} .v-bad .tag,.v-bad .big{color:var(--bad)}
+
+.ledger{display:grid;gap:6px;margin:0}
+.ledger div{display:flex;justify-content:space-between;gap:12px;font-size:.92rem}
+.ledger dt{color:var(--muted)}
+.ledger dd{margin:0;font-family:var(--f-num);font-variant-numeric:tabular-nums;text-align:right}
+.ledger .total{border-top:1px solid var(--line);padding-top:6px;font-weight:600}
+.ledger .total dt{color:var(--ink)}
+.neg{color:var(--bad)}
+
+.bar{display:flex;height:16px;border-radius:4px;overflow:hidden;background:var(--line)}
+.bar span{display:block;height:100%}
+.bar .gap{background:repeating-linear-gradient(45deg,var(--bad) 0 4px,transparent 4px 8px)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+
+.sens{overflow-x:auto}
+.sens table{width:100%;border-collapse:collapse;font-size:.88rem}
+.sens th,.sens td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line)}
+.sens th{color:var(--muted);font-weight:500}
+.sens th:first-child,.sens td:first-child{text-align:left}
+.sens td{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.sens td.cur{outline:2px solid var(--accent);outline-offset:-2px;border-radius:3px}
+
+.warnline{font-size:.86rem;color:var(--bad);margin:0}
+.next{display:grid;gap:8px;margin:0;padding-left:1.2em;font-size:.9rem}
+.next li::marker{color:var(--accent);font-weight:700}
+
+/* 手機：底部固定顯示結論，點一下跳到結果 */
+.dock{display:none}
+@media (max-width:860px){
+  .dock{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:5;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--paper);border-top:1px solid var(--line);
+    box-shadow:0 -4px 16px rgba(0,0,0,.08);font:inherit;color:var(--ink);text-align:left;border-radius:0;width:100%}
+  .dock .d-tag{font-size:.8rem;font-weight:700}
+  .dock .d-num{font-family:var(--f-num);font-size:1.15rem;font-weight:600;font-variant-numeric:tabular-nums}
+  .dock .d-go{font-size:.8rem;color:var(--muted);white-space:nowrap}
+  .dock.v-ok .d-tag,.dock.v-ok .d-num{color:var(--ok)}
+  .dock.v-warn .d-tag,.dock.v-warn .d-num{color:var(--warn)}
+  .dock.v-bad .d-tag,.dock.v-bad .d-num{color:var(--bad)}
+  .wrap{padding-block:28px 110px}
+}
+footer{margin-top:28px;color:var(--muted);font-size:.8rem;display:grid;gap:4px;max-width:75ch}
+footer p{margin:0}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>退休投資評估表</h1>
+    <p class="lede">先算清楚每月收支和需要保留的錢，再看剩下多少是「十年內大概用不到的閒錢」。只有這部分才值得討論要不要投資。</p>
+    <div class="steps"><span>① 計算成本</span><span>② 決定要不要投</span><span class="dim">③ 誰執行</span></div>
+  </header>
+
+  <div class="notice" id="notice">
+    <span id="noticeText"><b>目前是範例數字</b>，不是實際狀況。請換成問到的真實數字，改動會自動重算。</span>
+    <button type="button" id="reset">恢復範例數字</button>
+  </div>
+
+  <div class="grid">
+    <form class="inputs" id="form" autocomplete="off">
+      <fieldset>
+        <legend>每月收入</legend>
+        <div class="row"><label for="incDad">爸爸退休金<small>月領金額；一次領的請填在下方「存款」</small></label><div class="field"><i>NT$</i><input id="incDad" type="number" inputmode="numeric" min="0" step="1000"></div></div>
+        <div class="row"><label for="incMom">媽媽退休金或收入</label><div class="field"><i>NT$</i><input id="incMom" type="number" inputmode="numeric" min="0" step="1000"></div></div>
+        <div class="row"><label for="incOther">其他收入<small>租金、子女孝親費等，穩定才算</small></label><div class="field"><i>NT$</i><input id="incOther" type="number" inputmode="numeric" min="0" step="1000"></div></div>
+        <div class="sub"><span>收入合計</span><b id="sInc">—</b></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>每月支出</legend>
+        <div class="row"><label for="expLiving">生活費<small>吃、住、水電、交通、日用品</small></label><div class="field"><i>NT$</i><input id="expLiving" type="number" inputmode="numeric" min="0" step="1000"></div></div>
+        <div class="row"><label for="expMed">慢性病醫療自付<small>爸媽兩人：掛號、部分負擔、自費藥、血糖試紙等</small></label><div class="field"><i>NT$</i><input id="expMed" type="number" inputmode="numeric" min="0" step="500"></div></div>
+        <div class="row"><label for="expIns">保險費<small>年繳的請除以 12</small></label><div class="field"><i>NT$</i><input id="expIns" type="number" inputmode="numeric" min="0" step="500"></div></div>
+        <div class="row"><label for="expOther">其他固定支出<small>貸款、紅白包、宗教、孫子等</small></label><div class="field"><i>NT$</i><input id="expOther" type="number" inputmode="numeric" min="0" step="500"></div></div>
+        <div class="sub"><span>支出合計</span><b id="sExp">—</b></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>資產與負債</legend>
+        <div class="row"><label for="assSave">存款<small>活存＋定存，含一次領的退休金</small></label><div class="field"><i>NT$</i><input id="assSave" type="number" inputmode="numeric" min="0" step="10000"></div></div>
+        <div class="row"><label for="assOther">其他可動用資產<small>已有的股票、基金。房子不算，因為不會賣來付看護費</small></label><div class="field"><i>NT$</i><input id="assOther" type="number" inputmode="numeric" min="0" step="10000"></div></div>
+        <div class="row"><label for="debt">負債<small>房貸、車貸、信貸的剩餘本金</small></label><div class="field"><i>NT$</i><input id="debt" type="number" inputmode="numeric" min="0" step="10000"></div></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>準備金假設</legend>
+        <p class="hint">這裡是假設值，沒有標準答案。保守一點比較安全。</p>
+        <div class="row"><label for="emMonths">緊急準備金<small>留幾個月的支出</small></label><div class="field"><input id="emMonths" type="number" inputmode="numeric" min="0" step="1"><i>個月</i></div></div>
+        <div class="row"><label for="careCost">每人每月照顧費用<small>外籍看護薪資約 2.1 萬＋加班費，加上就業安定費、健保、食宿，粗估 3 萬上下</small></label><div class="field"><i>NT$</i><input id="careCost" type="number" inputmode="numeric" min="0" step="1000"></div></div>
+        <div class="row"><label for="carePeople">需要照顧的人數</label><div class="field"><input id="carePeople" type="number" inputmode="numeric" min="0" max="2" step="1"><i>人</i></div></div>
+        <div class="row"><label for="careYears">預估照顧年數</label><div class="field"><input id="careYears" type="number" inputmode="numeric" min="0" step="1"><i>年</i></div></div>
+        <div class="row"><label for="oneOff">一次性醫療自費<small>住院自費、自費藥材、輔具、居家改裝</small></label><div class="field"><i>NT$</i><input id="oneOff" type="number" inputmode="numeric" min="0" step="10000"></div></div>
+      </fieldset>
+    </form>
+
+    <aside class="result" id="result" aria-live="polite">
+      <div class="verdict" id="verdict">
+        <span class="tag" id="vTag">—</span>
+        <span class="big" id="vFree">—</span>
+        <span class="wan" id="vWan">可考慮投資的閒錢</span>
+        <p id="vText"></p>
+      </div>
+
+      <div class="card">
+        <h2>怎麼算出來的</h2>
+        <dl class="ledger">
+          <div><dt>每月結餘（收入 − 支出）</dt><dd id="rSurplus">—</dd></div>
+          <div><dt>可動用淨資產</dt><dd id="rNet">—</dd></div>
+          <div><dt>− 緊急準備金</dt><dd id="rEmerg">—</dd></div>
+          <div><dt>− 大病／照顧準備金</dt><dd id="rCare">—</dd></div>
+          <div class="total"><dt>= 可考慮投資的閒錢</dt><dd id="rFree">—</dd></div>
+        </dl>
+        <p class="warnline" id="deficit" hidden>每月已經入不敷出，存款會持續減少，這種情況不建議投資。</p>
+        <div class="bar" id="bar" aria-hidden="true"></div>
+        <div class="legend">
+          <span style="--c:var(--seg-emerg)">緊急準備</span>
+          <span style="--c:var(--seg-care)">照顧準備</span>
+          <span style="--c:var(--seg-free)">閒錢</span>
+          <span style="--c:var(--bad)">不足</span>
+        </div>
+        <p class="hint" style="margin:0">照顧準備金的算法：照顧時每月缺口（照顧費 × 人數 − 每月結餘）× 12 × 年數，再加一次性醫療自費。</p>
+      </div>
+
+      <div class="card">
+        <h2>換個假設會差多少</h2>
+        <p class="hint" style="margin:0">其他數字不變，只改照顧人數和年數後的閒錢。框起來的是目前的設定。</p>
+        <div class="sens"><table>
+          <thead><tr><th>照顧年數</th><th>1 人</th><th>2 人</th></tr></thead>
+          <tbody id="sens"></tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h2>③ 如果要投，誰執行</h2>
+        <ol class="next">
+          <li>只拿閒錢裡確定 5～10 年用不到的部分，不必全部投入。</li>
+          <li>用銀行或券商設定定期定額，買一檔市值型 ETF，設定好就不動。</li>
+          <li>不買個股、不開融資、不聽明牌。姊妹只需要偶爾確認設定沒被改。</li>
+          <li>找不到適合的人執行，就回到第 ② 步，改成先不投。</li>
+        </ol>
+      </div>
+    </aside>
+  </div>
+
+  <button type="button" class="dock" id="dock" aria-label="跳到結果">
+    <span style="display:grid"><span class="d-tag" id="dTag">—</span><span class="d-num" id="dNum">—</span></span>
+    <span class="d-go">看結果 ↓</span>
+  </button>
+
+  <footer>
+    <p>看護費用參考：勞動部 2025 年移工管理及運用調查，外籍家庭看護經常性薪資平均約 2.1 萬元、加班費約 2,800 元；家庭看護工就業安定費每月 2,000 元。家庭照顧者關懷總會調查，平均每月照顧花費約 21,923 元。</p>
+    <p>需要長期照顧時，可撥 1966 申請長照 2.0 失能評估，有補助但不會全額。</p>
+    <p>這是一般性試算工具，不是理財建議；實際配置請依完整財務狀況決定。</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var SAMPLE = {incDad:30000,incMom:0,incOther:0,expLiving:17000,expMed:3000,expIns:0,expOther:0,assSave:1500000,assOther:0,debt:0,emMonths:12,careCost:30000,carePeople:1,careYears:3,oneOff:200000};
+  var KEY = 'retire-calc-v1';
+  var ids = Object.keys(SAMPLE);
+  var $ = function(id){return document.getElementById(id)};
+
+  function fmt(n){var s=Math.round(Math.abs(n)).toLocaleString('zh-TW');return (n<0?'−':'')+'NT$ '+s}
+  function wan(n){var w=n/10000;return (n<0?'−':'')+'約 '+(Math.abs(w)>=100?Math.round(Math.abs(w)):Math.abs(w).toFixed(1).replace(/\.0$/,''))+' 萬'}
+  function val(id){var x=parseFloat($(id).value);return isFinite(x)&&x>0?x:0}
+
+  function load(){
+    var data=null;
+    try{data=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+    var src=data||SAMPLE;
+    ids.forEach(function(id){$(id).value=(src[id]!=null?src[id]:SAMPLE[id])});
+    updateNotice();
+  }
+  function save(){
+    var d={};ids.forEach(function(id){d[id]=$(id).value===''?0:Number($(id).value)});
+    try{localStorage.setItem(KEY,JSON.stringify(d))}catch(e){}
+  }
+  function isSample(){return ids.every(function(id){return val(id)===SAMPLE[id]})}
+  function updateNotice(){
+    var s=isSample();
+    $('notice').style.background=s?'':'var(--accent-soft)';
+    $('noticeText').innerHTML=s?'<b>目前是範例數字</b>，不是實際狀況。請換成問到的真實數字，改動會自動重算。':'已換成你們填的數字，會記在這台裝置的瀏覽器裡。';
+  }
+
+  function freeFor(v,people,years){
+    var gap=Math.max(0,v.careCost*people-v.surplus);
+    return v.net-v.emerg-(gap*12*years+v.oneOff);
+  }
+
+  function calc(){
+    var inc=val('incDad')+val('incMom')+val('incOther');
+    var exp=val('expLiving')+val('expMed')+val('expIns')+val('expOther');
+    var surplus=inc-exp;
+    var net=val('assSave')+val('assOther')-val('debt');
+    var emerg=exp*val('emMonths');
+    var people=val('carePeople'),years=val('careYears');
+    var v={careCost:val('careCost'),surplus:surplus,net:net,emerg:emerg,oneOff:val('oneOff')};
+    var gap=Math.max(0,v.careCost*people-surplus);
+    var care=gap*12*years+v.oneOff;
+    var free=net-emerg-care;
+
+    $('sInc').textContent=fmt(inc);
+    $('sExp').textContent=fmt(exp);
+    $('rSurplus').textContent=fmt(surplus);
+    $('rSurplus').className=surplus<0?'neg':'';
+    $('rNet').textContent=fmt(net);
+    $('rEmerg').textContent=fmt(emerg);
+    $('rCare').textContent=fmt(care);
+    $('rFree').textContent=fmt(free);
+    $('rFree').className=free<0?'neg':'';
+    $('deficit').hidden=surplus>=0;
+
+    var box=$('verdict'),tag,text,cls;
+    if(free<=0||surplus<0){
+      cls='v-bad';tag='② 結論：先不投';
+      text=free<=0?'扣掉緊急和照顧準備金後，存款不夠用。這筆錢應該留著，放活存或定存就好。':'雖然帳面上有剩，但每月入不敷出，存款會越來越少，先處理收支。';
+    }else if(free<300000){
+      cls='v-warn';tag='② 結論：可以小額，但差別不大';
+      text='閒錢不多，投資賺到的錢有限，虧損帶來的家庭壓力卻可能不小。不投也完全合理。';
+    }else{
+      cls='v-ok';tag='② 結論：可以考慮投一部分';
+      text='這是扣掉準備金後的上限，不是建議全部投入。只拿確定 5～10 年用不到的部分。';
+    }
+    box.className='verdict '+cls;
+    $('vTag').textContent=tag;
+    $('vFree').textContent=fmt(free);
+    $('vWan').textContent=wan(free)+'｜可考慮投資的閒錢';
+    $('vText').textContent=text;
+    $('dock').className='dock '+cls;
+    $('dTag').textContent=tag.replace('② 結論：','');
+    $('dNum').textContent=wan(free);
+
+    // bar
+    var pos=Math.max(free,0),short=Math.max(-free,0);
+    var total=Math.max(emerg+care+pos,1);
+    var segs=[[emerg,'var(--seg-emerg)'],[care,'var(--seg-care)'],[pos,'var(--seg-free)']];
+    var bar=$('bar');bar.innerHTML='';
+    segs.forEach(function(s){if(s[0]>0){var e=document.createElement('span');e.style.width=(s[0]/total*100)+'%';e.style.background=s[1];bar.appendChild(e)}});
+    if(short>0){
+      // 不足時：整條代表需要的準備金，斜線部分是存款不夠的比例
+      bar.innerHTML='';
+      var need=emerg+care, have=Math.max(net,0);
+      var e1=document.createElement('span');e1.style.width=(Math.min(have,need)/need*100)+'%';e1.style.background='var(--seg-care)';bar.appendChild(e1);
+      var e2=document.createElement('span');e2.className='gap';e2.style.width=((need-Math.min(have,need))/need*100)+'%';bar.appendChild(e2);
+    }
+
+    // sensitivity
+    var rows=[3,5,8],tb=$('sens');tb.innerHTML='';
+    rows.forEach(function(y){
+      var tr=document.createElement('tr');
+      var th=document.createElement('td');th.textContent=y+' 年';tr.appendChild(th);
+      [1,2].forEach(function(p){
+        var td=document.createElement('td');var f=freeFor(v,p,y);
+        td.textContent=wan(f);if(f<0)td.className='neg';
+        if(p===people&&y===years)td.classList.add('cur');
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+  }
+
+  $('form').addEventListener('input',function(){calc();save();updateNotice()});
+  $('form').addEventListener('submit',function(e){e.preventDefault()});
+  $('dock').addEventListener('click',function(){
+    if(document.activeElement)document.activeElement.blur();
+    var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('result').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+  });
+  $('reset').addEventListener('click',function(){
+    ids.forEach(function(id){$(id).value=SAMPLE[id]});
+    try{localStorage.removeItem(KEY)}catch(e){}
+    calc();updateNotice();
+  });
+  load();calc();
+})();
+</script>
+
+</body>
+</html>
